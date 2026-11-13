@@ -1,0 +1,12 @@
+html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; }
+.info {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+  padding: 12px 16px; text-align: center; color: #fff;
+  background: rgba(0, 0, 0, .55); font-size: 15px;
+}
+.switch {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 10;
+  padding: 14px 28px; font-size: 17px; border: 0; border-radius: 999px;
+  background: #fff; color: #111; box-shadow: 0 2px 10px rgba(0,0,0,.4);
+}
+.switch:active { transform: translateX(-50%) scale(.97); }

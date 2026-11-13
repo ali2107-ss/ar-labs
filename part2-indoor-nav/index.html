@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AR-навигация в помещении (маркерная)</title>
+<script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+<script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar-nft.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; }
+  .panel { position: fixed; left: 0; right: 0; z-index: 10; padding: 12px 16px; color: #fff; background: rgba(0,0,0,.65); }
+  #top { top: 0; display: flex; gap: 8px; align-items: center; }
+  #top select { flex: 1; font-size: 16px; padding: 8px; border-radius: 8px; }
+  #top button { font-size: 16px; padding: 8px 12px; border-radius: 8px; border: 0; }
+  #bottom { bottom: 0; font-size: 18px; line-height: 1.35; min-height: 70px; }
+  #bottom small { display: block; opacity: .8; font-size: 14px; margin-top: 4px; }
+  #route { opacity: .85; font-size: 14px; }
+</style>
+</head>
+<body>
+<div id="top" class="panel">
+  <label for="dest">Куда идём:</label>
+  <select id="dest"></select>
+  <button id="voice" aria-pressed="true">Голос: вкл</button>
+</div>
+<div id="bottom" class="panel">
+  Выберите пункт назначения и наведите камеру на ближайший маркер.
+  <small id="route"></small>
+</div>
+
+<!-- Маркеры типа barcode 3x3, значения 1..5 (см. README: как их распечатать) -->
+<a-scene vr-mode-ui="enabled: false" embedded
+         arjs="sourceType: webcam; detectionMode: mono_and_matrix; matrixCodeType: 3x3; debugUIEnabled: false"
+         renderer="antialias: true; alpha: true">
+  <a-marker type="barcode" value="1" id="m1"><a-entity class="arrow" rotation="0 0 0"></a-entity></a-marker>
+  <a-marker type="barcode" value="2" id="m2"><a-entity class="arrow" rotation="0 0 0"></a-entity></a-marker>
+  <a-marker type="barcode" value="3" id="m3"><a-entity class="arrow" rotation="0 0 0"></a-entity></a-marker>
+  <a-marker type="barcode" value="4" id="m4"><a-entity class="arrow" rotation="0 0 0"></a-entity></a-marker>
+  <a-marker type="barcode" value="5" id="m5"><a-entity class="arrow" rotation="0 0 0"></a-entity></a-marker>
+  <a-entity camera></a-entity>
+</a-scene>
+
+<script>
+/* ===== Модель помещения (граф) =====
+   Узел = маркер на стене/полу. Ребро хранит угол от "верха" маркера по часовой стрелке:
+   0 = вперёд, 90 = направо, 180 = назад, 270 = налево.
+   Маркер клеится так, чтобы его верх смотрел вдоль коридора "от входа". */
+const NODES = {
+  1: { name: 'Вход',          info: 'Главный вход в здание. Гардероб справа.' },
+  2: { name: 'Холл',          info: 'Центральный холл. Отсюда ведут все коридоры.' },
+  3: { name: 'Аудитория 101', info: 'Лекционная аудитория на 60 мест, проектор, доска.' },
+  4: { name: 'Лаборатория',   info: 'Компьютерная лаборатория, 20 рабочих мест.' },
+  5: { name: 'Столовая',      info: 'Работает с 9:00 до 17:00.' },
+};
+// from -> { to: угол }
+const EDGES = {
+  1: { 2: 0 },
+  2: { 1: 180, 3: 270, 4: 90, 5: 0 },
+  3: { 2: 90 },
+  4: { 2: 270 },
+  5: { 2: 180 },
+};
+
+/* ===== Поиск маршрута (BFS) ===== */
+function findRoute(from, to) {
+  if (from === to) return [from];
+  const prev = { [from]: null }, queue = [from];
+  while (queue.length) {
+    const cur = queue.shift();
+    for (const next of Object.keys(EDGES[cur] || {}).map(Number)) {
+      if (next in prev) continue;
+      prev[next] = cur;
+      if (next === to) {
+        const path = [to];
+        while (prev[path[0]] !== null) path.unshift(prev[path[0]]);
+        return path;
+      }
+      queue.push(next);
+    }
+  }
+  return null;
+}
+function turnText(angle) {
+  const a = ((angle % 360) + 360) % 360;
+  if (a === 0) return 'идите прямо';
+  if (a === 90) return 'поверните направо';
+  if (a === 180) return 'развернитесь';
+  if (a === 270) return 'поверните налево';
+  return 'идите под углом ' + a + '°';
+}
+
+/* ===== Состояние ===== */
+const destSel = document.getElementById('dest');
+const bottom = document.getElementById('bottom');
+const routeEl = document.getElementById('route');
+let voiceOn = true, lastSpoken = '', lastNode = null;
+
+Object.entries(NODES).forEach(([id, n]) => {
+  const o = document.createElement('option'); o.value = id; o.textContent = n.name; destSel.appendChild(o);
+});
+destSel.value = '3';
+
+/* ===== Аналитика (localStorage): сканы маркеров, выбор целей, тип пользователя ===== */
+const stats = JSON.parse(localStorage.getItem('arnav-stats') || '{"scans":{},"dest":{},"reroutes":0}');
+const save = () => { try { localStorage.setItem('arnav-stats', JSON.stringify(stats)); } catch (e) {} };
+const bump = (obj, k) => { obj[k] = (obj[k] || 0) + 1; save(); };
+window.arnavStats = () => console.table(stats); // посмотреть в консоли браузера
+
+destSel.addEventListener('change', () => { bump(stats.dest, destSel.value); if (lastNode) onMarker(lastNode, true); });
+document.getElementById('voice').addEventListener('click', e => {
+  voiceOn = !voiceOn; e.target.textContent = 'Голос: ' + (voiceOn ? 'вкл' : 'выкл'); e.target.setAttribute('aria-pressed', voiceOn);
+  if (!voiceOn) speechSynthesis.cancel();
+});
+
+function speak(text) {
+  if (!voiceOn || !('speechSynthesis' in window) || text === lastSpoken) return;
+  lastSpoken = text; speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text); u.lang = 'ru-RU'; speechSynthesis.speak(u);
+}
+
+/* ===== 3D-стрелка: конус, лежащий на плоскости маркера ===== */
+function buildArrow(holder) {
+  holder.innerHTML = '';
+  const cone = document.createElement('a-cone');
+  cone.setAttribute('radius-bottom', '0.35'); cone.setAttribute('height', '1');
+  cone.setAttribute('rotation', '-90 0 0');          // конус смотрит на верх маркера (-Z)
+  cone.setAttribute('position', '0 0.3 0'); cone.setAttribute('color', '#22c55e');
+  const shaft = document.createElement('a-cylinder');
+  shaft.setAttribute('radius', '0.12'); shaft.setAttribute('height', '1');
+  shaft.setAttribute('rotation', '-90 0 0'); shaft.setAttribute('position', '0 0.3 1'); shaft.setAttribute('color', '#22c55e');
+  holder.appendChild(cone); holder.appendChild(shaft);
+}
+function pointArrow(markerId, angle) {
+  const holder = document.querySelector('#m' + markerId + ' .arrow');
+  buildArrow(holder);
+  holder.setAttribute('rotation', '0 ' + (-angle) + ' 0'); // по часовой стрелке при взгляде сверху
+  holder.setAttribute('animation', 'property: position; dir: alternate; dur: 700; loop: true; from: 0 0 0.3; to: 0 0 -0.3; easing: easeInOutSine');
+}
+function clearArrow(markerId) { document.querySelector('#m' + markerId + ' .arrow').innerHTML = ''; }
+
+/* ===== Реакция на найденный маркер ===== */
+function onMarker(id, forced) {
+  const dest = Number(destSel.value);
+  if (!forced) { bump(stats.scans, id); }
+  const here = NODES[id];
+  let route = findRoute(id, dest);
+  if (!route) { bottom.firstChild.textContent = 'Маршрут не найден'; return; }
+
+  // перестроение: если пользователь не на прошлом маршруте
+  if (!forced && lastNode && lastNode !== id && !window._route?.includes(id)) bump(stats, 'reroutes');
+  window._route = route; lastNode = id;
+
+  routeEl.textContent = 'Маршрут: ' + route.map(n => NODES[n].name).join(' → ');
+  if (route.length === 1) {
+    clearArrow(id);
+    setText('Вы прибыли: ' + here.name, here.info);
+    speak('Вы прибыли. ' + here.name);
+    return;
+  }
+  const next = route[1], angle = EDGES[id][next];
+  pointArrow(id, angle);
+  const msg = here.name + ': ' + turnText(angle) + ', к «' + NODES[next].name + '»';
+  setText(msg, here.info);
+  speak(turnText(angle) + ', к ' + NODES[next].name);
+}
+function setText(main, info) {
+  bottom.firstChild.textContent = main;
+  let s = bottom.querySelector('small.info');
+  if (!s) { s = document.createElement('small'); s.className = 'info'; bottom.insertBefore(s, routeEl); }
+  s.textContent = info;
+}
+
+document.querySelectorAll('a-marker').forEach(m => {
+  m.addEventListener('markerFound', () => onMarker(Number(m.getAttribute('value'))));
+});
+</script>
+</body>
+</html>
