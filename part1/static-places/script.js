@@ -65,6 +65,15 @@ function setModel() {
 
 window.onload = () => {
   const info = document.getElementById('info');
+    document.getElementById('motion').addEventListener('click', async () => {
+    try {
+      if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission) {
+        info.textContent = 'Датчики: ' + await DeviceOrientationEvent.requestPermission();
+      } else {
+        info.textContent = 'Датчики: разрешение не требуется';
+      }
+    } catch (e) { info.textContent = 'Датчики: ' + e.message; }
+  });
   document.querySelector('[data-action="change-model"]').addEventListener('click', setModel);
 
   const needGps = PLACES.some(p => p.lat == null);
@@ -74,7 +83,7 @@ window.onload = () => {
       const lon = p.lon ?? userPos.longitude;
       addPlace(p, lat, lon);
     });
-    info.textContent = 'Наведите камеру на объект. Модель: ' + MODELS[modelIndex].label;
+        info.textContent = 'GPS ±' + Math.round(userPos.accuracy || 0) + ' м. Наведите камеру на север.';
   };
 
   if (!needGps) return place({});
