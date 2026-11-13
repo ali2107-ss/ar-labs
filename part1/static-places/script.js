@@ -1,7 +1,12 @@
+// Места задаются статическим массивом. Если lat/lon = null, объект ставится
+// в ~35 м к северу от пользователя — так демо работает в любом месте.
 const PLACES = [
   { name: 'Объект 1', lat: null, lon: null },
+  // { name: 'Объект 2', lat: 51.1283, lon: 71.4305 },
 ];
 
+// Три "модели" из примитивов A-Frame (вместо .gltf-файлов, чтобы не нужны были assets).
+// Чтобы использовать реальные модели: entity.setAttribute('gltf-model', './assets/x/scene.gltf').
 const MODELS = [
   { label: 'Магнемайт', scale: '5 5 5', build: () => [
       ['a-sphere', { radius: 0.6, color: '#9aa5b1' }],
@@ -22,15 +27,7 @@ const MODELS = [
 ];
 
 let modelIndex = 0;
-const holders = [];
-
-const say = (text) => {
-  const el = document.getElementById('info');
-  if (el) el.textContent = text;
-};
-
-// любая ошибка скрипта будет видна на экране
-window.addEventListener('error', e => say('Ошибка: ' + e.message));
+const holders = []; // сущности-контейнеры для мест
 
 function buildModel(holder) {
   while (holder.firstChild) holder.removeChild(holder.firstChild);
@@ -41,6 +38,7 @@ function buildModel(holder) {
     Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
     holder.appendChild(el);
   });
+  // подпись, всегда повёрнутая к камере
   const label = document.createElement('a-text');
   label.setAttribute('value', holder.dataset.name);
   label.setAttribute('align', 'center');
@@ -62,8 +60,11 @@ function addPlace(place, lat, lon) {
 function setModel() {
   modelIndex = (modelIndex + 1) % MODELS.length;
   holders.forEach(buildModel);
-  say('Модель: ' + MODELS[modelIndex].label);
+  document.getElementById('info').textContent = 'Модель: ' + MODELS[modelIndex].label;
 }
+
+const say = (t) => { const el = document.getElementById('info'); if (el) el.textContent = t; };
+window.addEventListener('error', e => say('Ошибка: ' + e.message));
 
 window.addEventListener('load', () => {
   document.querySelector('[data-action="change-model"]')?.addEventListener('click', setModel);
@@ -72,26 +73,29 @@ window.addEventListener('load', () => {
     try {
       if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission) {
         say('Датчики: ' + await DeviceOrientationEvent.requestPermission());
-      } else {
-        say('Датчики: разрешение не требуется');
-      }
+      } else { say('Датчики: разрешение не требуется'); }
     } catch (e) { say('Датчики: ' + e.message); }
   });
 
-  const place = (c) => {
+  const camera = document.querySelector('[gps-new-camera]');
+  if (!camera || !AFRAME.components['gps-new-camera']) {
+    return say('Не загрузились компоненты AR.js (gps-new-camera). Проверьте <script> в index.html');
+  }
+  say('Определяю позицию… (разрешите геолокацию)');
+
+  let placed = false;
+  // Камера сама получает GPS и сообщает позицию — ставим объекты от неё,
+  // тогда начало координат сцены и объекты считаются от одной точки.
+  camera.addEventListener('gps-camera-update-position', (e) => {
+    if (placed) return;
+    placed = true;
+    const c = e.detail.position;
     PLACES.forEach((p, i) => {
       const lat = p.lat ?? c.latitude + 0.00009 * (i + 1); // ≈ 10 м на север
       const lon = p.lon ?? c.longitude;
       addPlace(p, lat, lon);
     });
-    say('GPS ±' + Math.round(c.accuracy || 0) + ' м. Наведите камеру на север. Модель: ' + MODELS[modelIndex].label);
-  };
-
-  if (!('geolocation' in navigator)) return say('Геолокация не поддерживается этим браузером');
-  say('Определяю позицию… (разрешите доступ к геолокации)');
-  navigator.geolocation.getCurrentPosition(
-    pos => place(pos.coords),
-    err => say('Нет геолокации (' + err.code + '): ' + err.message),
-    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
-  );
+    say('GPS получен. Объект ~10 м на север. Модель: ' + MODELS[modelIndex].label);
+  });
+  setTimeout(() => { if (!placed) say('GPS не получен за 20 с: выйдите на улицу / откройте в Safari'); }, 20000);
 });

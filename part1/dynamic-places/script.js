@@ -4,10 +4,18 @@
 const RADIUS_M = 400;   // радиус поиска
 const LIMIT = 25;       // максимум мест
 
-window.onload = () => {
+window.addEventListener('load', () => {
   const status = document.getElementById('status');
-  navigator.geolocation.getCurrentPosition(async pos => {
-    const { latitude, longitude } = pos.coords;
+  window.addEventListener('error', e => { status.textContent = 'Ошибка: ' + e.message; });
+  const camera = document.querySelector('[gps-new-camera]');
+  if (!camera || !AFRAME.components['gps-new-camera']) {
+    status.textContent = 'Не загрузились компоненты AR.js (gps-new-camera)'; return;
+  }
+  status.textContent = 'Определяю позицию… (разрешите геолокацию)';
+  let started = false;
+  camera.addEventListener('gps-camera-update-position', async (e) => {
+    if (started) return; started = true;
+    const { latitude, longitude } = e.detail.position;
     status.textContent = 'Ищу места рядом…';
     try {
       const places = await loadPlaces(latitude, longitude);
@@ -15,13 +23,10 @@ window.onload = () => {
       status.textContent = places.length
         ? 'Найдено мест: ' + places.length + '. Осмотритесь вокруг.'
         : 'Рядом ничего не найдено. Увеличьте RADIUS_M в script.js.';
-    } catch (e) {
-      status.textContent = 'Ошибка загрузки: ' + e.message;
-    }
-  }, err => {
-    status.textContent = 'Нет доступа к геолокации: ' + err.message;
-  }, { enableHighAccuracy: true, maximumAge: 0, timeout: 27000 });
-};
+    } catch (err) { status.textContent = 'Ошибка загрузки: ' + err.message; }
+  });
+  setTimeout(() => { if (!started) status.textContent = 'GPS не получен за 20 с: выйдите на улицу / откройте в Safari'; }, 20000);
+});
 
 async function loadPlaces(lat, lon) {
   const query = `[out:json][timeout:20];
