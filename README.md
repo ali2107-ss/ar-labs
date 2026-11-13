@@ -62,3 +62,8 @@ https://au.gmented.com/app/marker/marker.php → тип *Barcode 3x3* → зна
 * `.../part1/static-on-html/demo.html`
 * `.../part1/static-places/demo.html`
 * `.../part1/dynamic-places/demo.html`
+
+## Библиотеки (папка libs)
+Страницы используют локальные копии A-Frame и AR.js из папки `libs/` (чтобы не зависеть от сторонних CDN).
+Скачать их: в PowerShell, находясь в папке проекта, выполните `.\get-libs.ps1`, затем закоммитьте папку `libs`.
+Проверить, что всё выложено: откройте корневую страницу сайта — под заголовком «Проверка библиотек» должны быть 4 галочки.

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AR-лабораторная</title>
+<style>body{font:17px/1.5 system-ui,sans-serif;margin:20px}a{display:block;padding:8px 0}li{list-style:none}ul{padding:0}</style></head>
+<body>
+<h2>AR-лабораторная</h2>
+<p><b>Демо без GPS (для кабинета):</b></p>
+<a href="part1/static-on-html/demo.html">1. Места в HTML — демо</a>
+<a href="part1/static-places/demo.html">2. Места из JS — демо</a>
+<a href="part1/dynamic-places/demo.html">3. Места динамически — демо</a>
+<p><b>С реальным GPS (на улице):</b></p>
+<a href="part1/static-on-html/">1. Места в HTML</a>
+<a href="part1/static-places/">2. Места из JS</a>
+<a href="part1/dynamic-places/">3. Места динамически</a>
+<p><b>Навигация по маркерам:</b></p>
+<a href="part2-indoor-nav/">AR-навигация в помещении</a>
+<p><b>Проверка библиотек:</b></p>
+<ul id="l"></ul>
+<script>
+['libs/aframe.min.js','libs/aframe-look-at-component.min.js','libs/ar-threex-location-only.js','libs/aframe-ar.js'].forEach(async function (f) {
+  var li = document.createElement('li');
+  try { var r = await fetch(f, {cache: 'no-store'}); var t = await r.text();
+        li.textContent = (r.ok && t.length > 5000 ? '✓ ' : '✗ ') + f + ' (' + r.status + ', ' + Math.round(t.length / 1024) + ' КБ)'; }
+  catch (e) { li.textContent = '✗ ' + f + ' ' + e.message; }
+  document.getElementById('l').appendChild(li);
+});
+</script>
+</body></html>

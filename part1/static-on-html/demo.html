@@ -4,12 +4,35 @@
 <title>ДЕМО без GPS: Location AR: места только в HTML</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-<script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
-<script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar-threex-location-only.js"></script>
-<script src="https://raw.githack.com/AR-js-org/AR.js/3.4.5/aframe/build/aframe-ar.js"></script>
+<script src="../../libs/aframe.min.js?v=3"></script>
+<script src="../../libs/aframe-look-at-component.min.js?v=3"></script>
+<script src="../../libs/ar-threex-location-only.js?v=3"></script>
+<script src="../../libs/aframe-ar.js?v=3"></script>
 </head>
 <body style="margin:0;overflow:hidden">
+<div id="info" style="position:fixed;top:0;left:0;right:0;z-index:10;padding:10px 14px;text-align:center;color:#fff;background:rgba(0,0,0,.6);font:15px system-ui,sans-serif">Загрузка…</div>
+<script>
+(function () {
+  var info = document.getElementById('info');
+  var say = function (t) { info.textContent = t; };
+  // не загрузился какой-то скрипт
+  window.addEventListener('error', function (e) {
+    if (e.target && e.target.src) say('Не загрузился скрипт: ' + e.target.src.split('/').pop());
+    else say('Ошибка: ' + e.message);
+  }, true);
+  window.addEventListener('load', function () {
+    var ok = window.AFRAME && AFRAME.components['gps-new-camera'] && AFRAME.components['gps-new-entity-place'];
+    if (!ok) return say('Компоненты AR.js не загрузились. Проверьте интернет и обновите страницу');
+    say(window.DEMO_POS || document.title.indexOf('ДЕМО') === 0
+        ? 'ДЕМО без GPS. Объект ~10 м на север: поворачивайтесь с телефоном'
+        : 'Жду GPS…');
+    var cam = document.querySelector('[gps-new-camera]');
+    cam.addEventListener('gps-camera-update-position', function () { say('GPS получен. Ищите объект: смотрите по сторонам'); });
+    setTimeout(function () { if (info.textContent === 'Жду GPS…') say('GPS не получен: откройте в Safari, включите геолокацию или используйте demo.html'); }, 20000);
+  });
+})();
+</script>
+
 <!-- ВАЖНО: замените latitude/longitude на координаты рядом с вами (https://www.latlong.net/) -->
 <a-scene vr-mode-ui="enabled: false" embedded
          arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false"
