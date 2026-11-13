@@ -69,8 +69,8 @@ window.onload = () => {
 
   const needGps = PLACES.some(p => p.lat == null);
   const place = (userPos) => {
-    PLACES.forEach((p, i) => {
-      const lat = p.lat ?? userPos.latitude + 0.00032 * (i + 1); // ≈ 35 м на север
+    PLACES.forEach((p, i) => {Ы
+      const lat = p.lat ?? userPos.latitude + 0.00009 * (i + 1); // ≈ 35 м на север
       const lon = p.lon ?? userPos.longitude;
       addPlace(p, lat, lon);
     });
