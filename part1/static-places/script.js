@@ -1,12 +1,7 @@
-// Места задаются статическим массивом. Если lat/lon = null, объект ставится
-// в ~35 м к северу от пользователя — так демо работает в любом месте.
 const PLACES = [
   { name: 'Объект 1', lat: null, lon: null },
-  // { name: 'Объект 2', lat: 51.1283, lon: 71.4305 },
 ];
 
-// Три "модели" из примитивов A-Frame (вместо .gltf-файлов, чтобы не нужны были assets).
-// Чтобы использовать реальные модели: entity.setAttribute('gltf-model', './assets/x/scene.gltf').
 const MODELS = [
   { label: 'Магнемайт', scale: '5 5 5', build: () => [
       ['a-sphere', { radius: 0.6, color: '#9aa5b1' }],
@@ -27,7 +22,15 @@ const MODELS = [
 ];
 
 let modelIndex = 0;
-const holders = []; // сущности-контейнеры для мест
+const holders = [];
+
+const say = (text) => {
+  const el = document.getElementById('info');
+  if (el) el.textContent = text;
+};
+
+// любая ошибка скрипта будет видна на экране
+window.addEventListener('error', e => say('Ошибка: ' + e.message));
 
 function buildModel(holder) {
   while (holder.firstChild) holder.removeChild(holder.firstChild);
@@ -38,7 +41,6 @@ function buildModel(holder) {
     Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
     holder.appendChild(el);
   });
-  // подпись, всегда повёрнутая к камере
   const label = document.createElement('a-text');
   label.setAttribute('value', holder.dataset.name);
   label.setAttribute('align', 'center');
@@ -60,36 +62,36 @@ function addPlace(place, lat, lon) {
 function setModel() {
   modelIndex = (modelIndex + 1) % MODELS.length;
   holders.forEach(buildModel);
-  document.getElementById('info').textContent = 'Модель: ' + MODELS[modelIndex].label;
+  say('Модель: ' + MODELS[modelIndex].label);
 }
 
-window.onload = () => {
-  const info = document.getElementById('info');
-    document.getElementById('motion').addEventListener('click', async () => {
+window.addEventListener('load', () => {
+  document.querySelector('[data-action="change-model"]')?.addEventListener('click', setModel);
+
+  document.getElementById('motion')?.addEventListener('click', async () => {
     try {
       if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission) {
-        info.textContent = 'Датчики: ' + await DeviceOrientationEvent.requestPermission();
+        say('Датчики: ' + await DeviceOrientationEvent.requestPermission());
       } else {
-        info.textContent = 'Датчики: разрешение не требуется';
+        say('Датчики: разрешение не требуется');
       }
-    } catch (e) { info.textContent = 'Датчики: ' + e.message; }
+    } catch (e) { say('Датчики: ' + e.message); }
   });
-  document.querySelector('[data-action="change-model"]').addEventListener('click', setModel);
 
-  const needGps = PLACES.some(p => p.lat == null);
-  const place = (userPos) => {
-    PLACES.forEach((p, i) => {Ы
-      const lat = p.lat ?? userPos.latitude + 0.00009 * (i + 1); // ≈ 35 м на север
-      const lon = p.lon ?? userPos.longitude;
+  const place = (c) => {
+    PLACES.forEach((p, i) => {
+      const lat = p.lat ?? c.latitude + 0.00009 * (i + 1); // ≈ 10 м на север
+      const lon = p.lon ?? c.longitude;
       addPlace(p, lat, lon);
     });
-        info.textContent = 'GPS ±' + Math.round(userPos.accuracy || 0) + ' м. Наведите камеру на север.';
+    say('GPS ±' + Math.round(c.accuracy || 0) + ' м. Наведите камеру на север. Модель: ' + MODELS[modelIndex].label);
   };
 
-  if (!needGps) return place({});
+  if (!('geolocation' in navigator)) return say('Геолокация не поддерживается этим браузером');
+  say('Определяю позицию… (разрешите доступ к геолокации)');
   navigator.geolocation.getCurrentPosition(
     pos => place(pos.coords),
-    err => { info.textContent = 'Нет доступа к геолокации: ' + err.message; },
-    { enableHighAccuracy: true, maximumAge: 0, timeout: 27000 }
+    err => say('Нет геолокации (' + err.code + '): ' + err.message),
+    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
   );
-};
+});
