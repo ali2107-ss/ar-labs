@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Маркеры для AR-навигации</title>
+<style>
+  @page { size: A4 portrait; margin: 10mm; }
+  * { box-sizing: border-box; }
+  body { margin: 20px; color: #111; font: 16px/1.4 system-ui, sans-serif; }
+  h1 { margin: 0 0 6px; font-size: 24px; }
+  p { margin: 0 0 12px; }
+  .sheet { display: grid; grid-template-columns: repeat(2, 72mm); justify-content: center; gap: 5mm 10mm; }
+  figure { margin: 0; break-inside: avoid; text-align: center; }
+  img { display: block; width: 72mm; height: 72mm; margin: 0 auto; }
+  figcaption { margin-top: 2mm; font-weight: 700; }
+  @media print {
+    body { margin: 0; }
+    h1 { font-size: 14pt; }
+    p { margin-bottom: 4mm; font-size: 9pt; }
+    .sheet { gap: 4mm 10mm; }
+    figcaption { margin-top: 1mm; font-size: 9pt; }
+  }
+  @media screen and (max-width: 520px) {
+    body { margin: 14px; }
+    .sheet { grid-template-columns: minmax(0, 72mm); }
+  }
+</style>
+</head>
+<body>
+<h1>Маркеры AR-навигации</h1>
+<p>Печатайте на A4 в масштабе 100% (не включайте «вписать в страницу»). Разрежьте лист и показывайте камере по одному маркеру.</p>
+<div class="sheet">
+  <figure><img src="markers/marker-1.png" alt="AR-маркер 1"><figcaption>1 — Вход</figcaption></figure>
+  <figure><img src="markers/marker-2.png" alt="AR-маркер 2"><figcaption>2 — Холл</figcaption></figure>
+  <figure><img src="markers/marker-3.png" alt="AR-маркер 3"><figcaption>3 — Аудитория 101</figcaption></figure>
+  <figure><img src="markers/marker-4.png" alt="AR-маркер 4"><figcaption>4 — Лаборатория</figcaption></figure>
+  <figure><img src="markers/marker-5.png" alt="AR-маркер 5"><figcaption>5 — Столовая</figcaption></figure>
+</div>
+</body>
+</html>
