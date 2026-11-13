@@ -8,6 +8,8 @@
 <script src="../../libs/aframe-look-at-component.min.js?v=3"></script>
 <script src="../../libs/ar-threex-location-only.js?v=3"></script>
 <script src="../../libs/aframe-ar.js?v=3"></script>
+<link rel="stylesheet" href="../../libs/ar-mobile-controls.css">
+<script src="../../libs/ar-mobile-controls.js"></script>
 </head>
 <body style="margin:0;overflow:hidden">
 <div id="info" style="position:fixed;top:0;left:0;right:0;z-index:10;padding:10px 14px;text-align:center;color:#fff;background:rgba(0,0,0,.6);font:15px system-ui,sans-serif">Загрузка…</div>
@@ -32,6 +34,7 @@
   });
 })();
 </script>
+<button class="ar-sensor-button" type="button" data-ar-sensor-button>Включить датчики</button>
 
 <!-- ВАЖНО: замените latitude/longitude на координаты рядом с вами (https://www.latlong.net/) -->
 <a-scene vr-mode-ui="enabled: false" embedded

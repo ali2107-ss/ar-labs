@@ -1,5 +1,5 @@
 // Места задаются статическим массивом. Если lat/lon = null, объект ставится
-// в ~35 м к северу от пользователя — так демо работает в любом месте.
+// примерно в 10 м к северу от пользователя — так демо работает в любом месте.
 const PLACES = [
   { name: 'Объект 1', lat: null, lon: null },
   // { name: 'Объект 2', lat: 51.1283, lon: 71.4305 },
@@ -68,14 +68,6 @@ window.addEventListener('error', e => say('Ошибка: ' + e.message));
 
 window.addEventListener('load', () => {
   document.querySelector('[data-action="change-model"]')?.addEventListener('click', setModel);
-
-  document.getElementById('motion')?.addEventListener('click', async () => {
-    try {
-      if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission) {
-        say('Датчики: ' + await DeviceOrientationEvent.requestPermission());
-      } else { say('Датчики: разрешение не требуется'); }
-    } catch (e) { say('Датчики: ' + e.message); }
-  });
 
   const camera = document.querySelector('[gps-new-camera]');
   if (!camera || !AFRAME.components['gps-new-camera']) {

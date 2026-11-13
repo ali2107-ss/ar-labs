@@ -4,6 +4,7 @@
 <style>body{font:17px/1.5 system-ui,sans-serif;margin:20px}a{display:block;padding:8px 0}li{list-style:none}ul{padding:0}</style></head>
 <body>
 <h2>AR-лабораторная</h2>
+<p>Для показа на телефоне откройте страницу по HTTPS, разрешите доступ к камере и нажмите «Включить датчики» на AR-страницах.</p>
 <p><b>Демо без GPS (для кабинета):</b></p>
 <a href="part1/static-on-html/demo.html">1. Места в HTML — демо</a>
 <a href="part1/static-places/demo.html">2. Места из JS — демо</a>
@@ -20,7 +21,7 @@
 ['libs/aframe.min.js','libs/aframe-look-at-component.min.js','libs/ar-threex-location-only.js','libs/aframe-ar.js'].forEach(async function (f) {
   var li = document.createElement('li');
   try { var r = await fetch(f, {cache: 'no-store'}); var t = await r.text();
-        li.textContent = (r.ok && t.length > 5000 ? '✓ ' : '✗ ') + f + ' (' + r.status + ', ' + Math.round(t.length / 1024) + ' КБ)'; }
+        li.textContent = (r.ok && t.length > 1000 ? '✓ ' : '✗ ') + f + ' (' + r.status + ', ' + Math.round(t.length / 1024) + ' КБ)'; }
   catch (e) { li.textContent = '✗ ' + f + ' ' + e.message; }
   document.getElementById('l').appendChild(li);
 });

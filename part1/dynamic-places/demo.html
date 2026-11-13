@@ -8,6 +8,8 @@
 <script src="../../libs/aframe-look-at-component.min.js?v=3"></script>
 <script src="../../libs/ar-threex-location-only.js?v=3"></script>
 <script src="../../libs/aframe-ar.js?v=3"></script>
+<link rel="stylesheet" href="../../libs/ar-mobile-controls.css">
+<script src="../../libs/ar-mobile-controls.js"></script>
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; }
   #status { position: fixed; top: 0; left: 0; right: 0; z-index: 10; padding: 12px 16px;
@@ -18,7 +20,8 @@
 </head>
 <body>
 <div id="status">Определяю позицию…</div>
-<!-- gpsMinDistance: не показывать объекты ближе 40 м (аналог minDistance из статьи) -->
+<button class="ar-sensor-button" type="button" data-ar-sensor-button>Включить датчики</button>
+<!-- Не показывать объекты ближе 5 м: GPS рядом с камерой нестабилен. -->
 <a-scene vr-mode-ui="enabled: false" embedded
          arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false"
          renderer="antialias: true; alpha: true">

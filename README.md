@@ -10,30 +10,35 @@ part1/                       # туториал Location-Based AR (Medium + repo
 part2-indoor-nav/            # проект ar-nav: навигация внутри помещения по маркерам
 ```
 
-## Запуск (обязательно HTTPS, иначе камера и GPS не заработают)
+## Показ на телефоне
 
-1. Создайте репозиторий на GitHub, например `ar-labs`, и загрузите туда эту папку:
+Камера и GPS браузера работают только по HTTPS. Для этого проекта откройте на телефоне:
+
+`https://ali2107-ss.github.io/ar-labs/`
+
+Для показа без ожидания GPS выберите раздел **«Демо без GPS»**. Разрешите браузеру доступ к камере и нажмите **«Включить датчики»**. Для indoor-навигации распечатайте barcode-маркеры 3×3 со значениями 1–5 по инструкции ниже.
+
+Чтобы опубликовать собственную копию проекта:
+
+1. Отправьте файлы в GitHub:
    ```
-   git init
    git add .
    git commit -m "AR labs"
-   git branch -M main
-   git remote add origin https://github.com/<ваш-логин>/ar-labs.git
    git push -u origin main
    ```
 2. GitHub → Settings → Pages → Source: *Deploy from a branch* → `main` / `(root)` → Save.
-3. Через 1–2 минуты откройте на телефоне:
+3. Через 1–2 минуты откройте на телефоне адрес своей страницы:
    - `https://<логин>.github.io/ar-labs/part1/static-on-html/`
    - `https://<логин>.github.io/ar-labs/part1/static-places/`
    - `https://<логин>.github.io/ar-labs/part1/dynamic-places/`
    - `https://<логин>.github.io/ar-labs/part2-indoor-nav/`
-4. Разрешите доступ к камере и геолокации. Тестируйте на улице: внутри GPS неточен.
+4. Разрешите доступ к камере и геолокации. Тестируйте GPS-примеры на улице: внутри координаты неточны.
 
 ## Часть 1
 
 * **static-on-html** — единственное, что нужно поменять: `latitude` / `longitude` в `gps-new-entity-place` на координаты рядом с вами (https://www.latlong.net/). Сейчас там Колизей, как в статье.
-* **static-places** — массив `PLACES` в `script.js`. Если `lat/lon = null`, объект ставится в ~35 м севернее вас. Кнопка меняет модель (3 штуки из примитивов).
-* **dynamic-places** — ищет заведения в радиусе 400 м через OpenStreetMap Overpass API и показывает метку с названием над каждым. Ключи не нужны.
+* **static-places** — массив `PLACES` в `script.js`. Если `lat/lon = null`, объект ставится примерно в 10 м севернее вас. Кнопка меняет модель (3 штуки из примитивов).
+* **dynamic-places** — ищет заведения в радиусе 400 м через OpenStreetMap Overpass API и показывает метку с названием над каждым. Поддерживаются точки и объекты, размеченные контурами; ключи не нужны.
 
 Отличия от статьи (она 2019 года, AR.js v2):
 * использован AR.js **v3** + A-Frame 1.3.0 (`gps-new-camera`, `gps-new-entity-place`), как в папке `v3` репозитория;

@@ -8,7 +8,9 @@
 <script src="../../libs/aframe-look-at-component.min.js?v=3"></script>
 <script src="../../libs/ar-threex-location-only.js?v=3"></script>
 <script src="../../libs/aframe-ar.js?v=3"></script>
+<link rel="stylesheet" href="../../libs/ar-mobile-controls.css">
 <link rel="stylesheet" href="style.css">
+<script src="../../libs/ar-mobile-controls.js"></script>
 <script src="script.js"></script>
 </head>
 <body>
@@ -19,6 +21,6 @@
   <a-camera look-controls-enabled="false" arjs-device-orientation-controls="smoothingFactor: 0.1" gps-new-camera="gpsMinDistance: 5; positionMinAccuracy: 1000"></a-camera>
 </a-scene>
 <button class="switch" data-action="change-model">Сменить модель</button>
-<button class="switch" id="motion" style="bottom:90px">Включить датчики</button>
+<button class="ar-sensor-button" type="button" data-ar-sensor-button style="bottom:calc(90px + env(safe-area-inset-bottom))">Включить датчики</button>
 </body>
 </html>

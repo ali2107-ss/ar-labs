@@ -50,8 +50,8 @@ async function fetchWithTimeout(url, options, ms) {
 
 async function loadPlaces(lat, lon) {
   const query = `[out:json][timeout:15];
-    node(around:${RADIUS_M},${lat},${lon})["name"]["amenity"];
-    out ${LIMIT};`;
+    nwr(around:${RADIUS_M},${lat},${lon})["name"]["amenity"];
+    out center tags ${LIMIT};`;
   let lastError;
   for (const url of ENDPOINTS) {            // пробуем зеркала по очереди
     try {
@@ -62,7 +62,12 @@ async function loadPlaces(lat, lon) {
       }, 12000);
       if (!res.ok) throw new Error(url + ' вернул ' + res.status);
       const json = await res.json();
-      return json.elements.map(el => ({ name: el.tags.name, kind: el.tags.amenity, lat: el.lat, lon: el.lon }));
+      return json.elements.flatMap(el => {
+        const latitude = el.lat ?? el.center?.lat;
+        const longitude = el.lon ?? el.center?.lon;
+        if (!el.tags?.name || !el.tags?.amenity || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return [];
+        return [{ name: el.tags.name, kind: el.tags.amenity, lat: latitude, lon: longitude }];
+      });
     } catch (err) { lastError = err; }
   }
   throw lastError;
