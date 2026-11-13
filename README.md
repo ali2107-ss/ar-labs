@@ -55,3 +55,10 @@ part2-indoor-nav/            # проект ar-nav: навигация внут�
 Используются barcode-маркеры 3×3 со значениями 1–5. Сгенерируйте и распечатайте их генератором:
 https://au.gmented.com/app/marker/marker.php → тип *Barcode 3x3* → значения 1, 2, 3, 4, 5.
 Клейте так, чтобы верх маркера смотрел вдоль коридора «от входа». Изменить граф и названия: `NODES` и `EDGES` в `index.html`.
+
+## Демо без GPS (для кабинета)
+Рядом с каждой страницей лежит `demo.html`: позиция задана фиксированно (`simulateLatitude/Longitude`), GPS не нужен.
+Объекты стоят к северу и вокруг этой точки, смотрите в сторону севера (компас телефона работает).
+* `.../part1/static-on-html/demo.html`
+* `.../part1/static-places/demo.html`
+* `.../part1/dynamic-places/demo.html`

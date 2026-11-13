@@ -1,3 +1,5 @@
+// Динамическая загрузка мест рядом с пользователем (OpenStreetMap Overpass API, ключи не нужны).
+// Если все серверы Overpass недоступны (502 и т.п.), показываются демо-места вокруг пользователя.
 const RADIUS_M = 400;
 const LIMIT = 25;
 const ENDPOINTS = [
@@ -13,6 +15,12 @@ window.addEventListener('load', () => {
   const camera = document.querySelector('[gps-new-camera]');
   if (!camera || !AFRAME.components['gps-new-camera']) {
     status.textContent = 'Не загрузились компоненты AR.js (gps-new-camera)'; return;
+  }
+  if (window.DEMO_POS) {   // ДЕМО-режим (demo.html): без GPS и без интернета-запросов
+    const demoList = demoPlaces(window.DEMO_POS.latitude, window.DEMO_POS.longitude);
+    demoList.forEach(renderPlace);
+    status.textContent = 'ДЕМО без GPS. Мест: ' + demoList.length + '. Осмотритесь вокруг.';
+    return;
   }
   status.textContent = 'Определяю позицию… (разрешите геолокацию)';
   let started = false;
@@ -30,7 +38,7 @@ window.addEventListener('load', () => {
     status.textContent = (demo ? 'Сервер карт недоступен, показаны ДЕМО-места. ' : '')
       + 'Мест: ' + places.length + '. Осмотритесь вокруг.';
   });
-  setTimeout(() => { if (!started) status.textContent = 'GPS не получен за 20 с: выйдите на улицу / откройте в Safari'; }, 20000);
+  setTimeout(() => { if (!started) status.textContent = 'GPS не получен за 20 с: откройте в Safari, включите геолокацию, подойдите к окну или используйте demo.html'; }, 20000);
 });
 
 async function fetchWithTimeout(url, options, ms) {
@@ -45,7 +53,7 @@ async function loadPlaces(lat, lon) {
     node(around:${RADIUS_M},${lat},${lon})["name"]["amenity"];
     out ${LIMIT};`;
   let lastError;
-  for (const url of ENDPOINTS) {
+  for (const url of ENDPOINTS) {            // пробуем зеркала по очереди
     try {
       const res = await fetchWithTimeout(url, {
         method: 'POST',
@@ -60,11 +68,12 @@ async function loadPlaces(lat, lon) {
   throw lastError;
 }
 
+// Демо-места на расстоянии 15–40 м вокруг пользователя (для показа в помещении)
 function demoPlaces(lat, lon) {
   const names = ['Демо: Кафе', 'Демо: Аптека', 'Демо: Банк', 'Демо: Библиотека', 'Демо: Парковка', 'Демо: Магазин'];
   return names.map((name, i) => {
     const angle = (i / names.length) * 2 * Math.PI;
-    const dist = 15 + (i % 3) * 12;
+    const dist = 15 + (i % 3) * 12;               // метры
     return {
       name, kind: 'demo',
       lat: lat + (dist * Math.cos(angle)) / 111320,

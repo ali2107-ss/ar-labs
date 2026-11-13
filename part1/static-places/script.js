@@ -81,21 +81,25 @@ window.addEventListener('load', () => {
   if (!camera || !AFRAME.components['gps-new-camera']) {
     return say('Не загрузились компоненты AR.js (gps-new-camera). Проверьте <script> в index.html');
   }
-  say('Определяю позицию… (разрешите геолокацию)');
-
-  let placed = false;
-  // Камера сама получает GPS и сообщает позицию — ставим объекты от неё,
-  // тогда начало координат сцены и объекты считаются от одной точки.
-  camera.addEventListener('gps-camera-update-position', (e) => {
-    if (placed) return;
-    placed = true;
-    const c = e.detail.position;
+  const placeAll = (c, demo) => {
     PLACES.forEach((p, i) => {
       const lat = p.lat ?? c.latitude + 0.00009 * (i + 1); // ≈ 10 м на север
       const lon = p.lon ?? c.longitude;
       addPlace(p, lat, lon);
     });
-       say('GPS ' + c.latitude.toFixed(6) + ', ' + c.longitude.toFixed(6) + '. Объект ~10 м на север. Модель: ' + MODELS[modelIndex].label);
+    say((demo ? 'ДЕМО без GPS. ' : 'GPS ' + c.latitude.toFixed(6) + ', ' + c.longitude.toFixed(6) + '. ')
+      + 'Объект ~10 м на север. Модель: ' + MODELS[modelIndex].label);
+  };
+
+  // ДЕМО-режим (demo.html): позиция задана фиксированно, GPS не нужен — удобно в помещении
+  if (window.DEMO_POS) { placeAll(window.DEMO_POS, true); return; }
+
+  say('Определяю позицию… (разрешите геолокацию)');
+  let placed = false;
+  camera.addEventListener('gps-camera-update-position', (e) => {
+    if (placed) return;
+    placed = true;
+    placeAll(e.detail.position, false);
   });
-  setTimeout(() => { if (!placed) say('GPS не получен за 20 с: выйдите на улицу / откройте в Safari'); }, 20000);
+  setTimeout(() => { if (!placed) say('GPS не получен за 20 с: откройте в Safari, включите геолокацию, подойдите к окну или используйте demo.html'); }, 20000);
 });
