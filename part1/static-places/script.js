@@ -95,7 +95,7 @@ window.addEventListener('load', () => {
       const lon = p.lon ?? c.longitude;
       addPlace(p, lat, lon);
     });
-    say('GPS получен. Объект ~10 м на север. Модель: ' + MODELS[modelIndex].label);
+       say('GPS ' + c.latitude.toFixed(6) + ', ' + c.longitude.toFixed(6) + '. Объект ~10 м на север. Модель: ' + MODELS[modelIndex].label);
   });
   setTimeout(() => { if (!placed) say('GPS не получен за 20 с: выйдите на улицу / откройте в Safari'); }, 20000);
 });

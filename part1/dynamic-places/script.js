@@ -1,8 +1,11 @@
-// Динамическая загрузка мест рядом с пользователем.
-// Вместо Foursquare API v2 (закрыт, нужны ключи) используется OpenStreetMap Overpass API:
-// ключи не нужны, CORS разрешён.
-const RADIUS_M = 400;   // радиус поиска
-const LIMIT = 25;       // максимум мест
+const RADIUS_M = 400;
+const LIMIT = 25;
+const ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+];
 
 window.addEventListener('load', () => {
   const status = document.getElementById('status');
@@ -17,34 +20,57 @@ window.addEventListener('load', () => {
     if (started) return; started = true;
     const { latitude, longitude } = e.detail.position;
     status.textContent = 'Ищу места рядом…';
+    let places, demo = false;
     try {
-      const places = await loadPlaces(latitude, longitude);
-      places.forEach(renderPlace);
-      status.textContent = places.length
-        ? 'Найдено мест: ' + places.length + '. Осмотритесь вокруг.'
-        : 'Рядом ничего не найдено. Увеличьте RADIUS_M в script.js.';
-    } catch (err) { status.textContent = 'Ошибка загрузки: ' + err.message; }
+      places = await loadPlaces(latitude, longitude);
+    } catch (err) {
+      places = demoPlaces(latitude, longitude); demo = true;
+    }
+    places.forEach(renderPlace);
+    status.textContent = (demo ? 'Сервер карт недоступен, показаны ДЕМО-места. ' : '')
+      + 'Мест: ' + places.length + '. Осмотритесь вокруг.';
   });
   setTimeout(() => { if (!started) status.textContent = 'GPS не получен за 20 с: выйдите на улицу / откройте в Safari'; }, 20000);
 });
 
+async function fetchWithTimeout(url, options, ms) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try { return await fetch(url, { ...options, signal: ctrl.signal }); }
+  finally { clearTimeout(t); }
+}
+
 async function loadPlaces(lat, lon) {
-  const query = `[out:json][timeout:20];
+  const query = `[out:json][timeout:15];
     node(around:${RADIUS_M},${lat},${lon})["name"]["amenity"];
     out ${LIMIT};`;
-  const res = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'data=' + encodeURIComponent(query),
+  let lastError;
+  for (const url of ENDPOINTS) {
+    try {
+      const res = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(query),
+      }, 12000);
+      if (!res.ok) throw new Error(url + ' вернул ' + res.status);
+      const json = await res.json();
+      return json.elements.map(el => ({ name: el.tags.name, kind: el.tags.amenity, lat: el.lat, lon: el.lon }));
+    } catch (err) { lastError = err; }
+  }
+  throw lastError;
+}
+
+function demoPlaces(lat, lon) {
+  const names = ['Демо: Кафе', 'Демо: Аптека', 'Демо: Банк', 'Демо: Библиотека', 'Демо: Парковка', 'Демо: Магазин'];
+  return names.map((name, i) => {
+    const angle = (i / names.length) * 2 * Math.PI;
+    const dist = 15 + (i % 3) * 12;
+    return {
+      name, kind: 'demo',
+      lat: lat + (dist * Math.cos(angle)) / 111320,
+      lon: lon + (dist * Math.sin(angle)) / (111320 * Math.cos(lat * Math.PI / 180)),
+    };
   });
-  if (!res.ok) throw new Error('Overpass вернул ' + res.status);
-  const json = await res.json();
-  return json.elements.map(e => ({
-    name: e.tags.name,
-    kind: e.tags.amenity,
-    lat: e.lat,
-    lon: e.lon,
-  }));
 }
 
 function renderPlace(place) {
